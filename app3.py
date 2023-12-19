@@ -10,7 +10,7 @@ st.title("Stock Price Forecasting with Prophet")
 
 # Get the symbol and period from the user
 symbol = st.sidebar.text_input("Enter the symbol", "BTC-USD")
-period = st.sidebar.selectbox("Enter the period", "10y")
+period = st.sidebar.text_input("Enter the period", "10y")
 
 # Get the data from yfinance
 ticker = yf.Ticker(symbol)
