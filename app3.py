@@ -1,4 +1,4 @@
-pip install prophet
+!pip install prophet
 # Import the libraries
 import streamlit as st
 import pandas as pd
