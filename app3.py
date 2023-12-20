@@ -9,8 +9,8 @@ from prophet.plot import plot_plotly, plot_components_plotly
 st.title("Stock Price Forecasting with Prophet")
 
 # Get the symbol and period from the user
-symbol = st.sidebar.text_input("Enter the symbol", "BTC-USD")
-period = st.sidebar.text_input("Enter the period", "10y")
+symbol = st.text_input("Enter stock symbol (e.g., BTC-USD):", 'BTC-USD')
+period = st.text_input("Enter stock period (e.g., 10y):", '10y')
 
 # Get the data from yfinance
 ticker = yf.Ticker(symbol)
