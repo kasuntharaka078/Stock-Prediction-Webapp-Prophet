@@ -13,32 +13,48 @@ symbol = st.text_input("Enter stock symbol (e.g., BTC-USD):", 'BTC-USD')
 period = st.text_input("Enter stock period (e.g., 10y):", '10y')
 
 # Get the data from yfinance
-ticker = yf.Ticker(symbol)
-df = ticker.history(period)
-df = df.reset_index()
-df = df.drop(['Open', 'High', 'Low', 'Volume', 'Dividends', 'Stock Splits'], axis = 1)
-df['Date'] = pd.to_datetime(df['Date']) #convert to datetime
-df['Date'] = df['Date'].dt.strftime('%Y-%m-%d') #format as YYYY-MM-DD
-df = df.rename(columns={'Date': 'ds', 'Close': 'y'})
+if symbol:
+    ticker = yf.Ticker(symbol)
+    df = ticker.history(period=period)
 
-# Display the data
-st.header("Data")
-st.write(df)
+    if df.empty:
+        st.error(f"No historical data found for '{symbol}'. Please enter a valid ticker symbol.")
+        st.stop()
 
-# Fit the prophet model
-st.header("Forecast")
-m = Prophet()
-m.fit(df)
+    df = df.reset_index()
 
-# Make future predictions
-future = m.make_future_dataframe(periods=365)
-forecast = m.predict(future)
+    if 'Date' not in df.columns or 'Close' not in df.columns:
+        st.error(f"The ticker '{symbol}' did not return the expected data schema.")
+        st.stop()
 
-# Plot the forecast
-fig1 = plot_plotly(m, forecast)
-st.plotly_chart(fig1)
+    df = df[['Date', 'Close']].dropna().copy()
 
-# Plot the components
-st.header("Components")
-fig2 = plot_components_plotly(m, forecast)
-st.plotly_chart(fig2)
+    if df.empty:
+        st.error(f"No valid price data is available for '{symbol}'.")
+        st.stop()
+
+    df['Date'] = pd.to_datetime(df['Date'])
+    df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+    df = df.rename(columns={'Date': 'ds', 'Close': 'y'})
+
+    # Display the data
+    st.header("Data")
+    st.write(df)
+
+    # Fit the prophet model
+    st.header("Forecast")
+    m = Prophet()
+    m.fit(df)
+
+    # Make future predictions
+    future = m.make_future_dataframe(periods=365)
+    forecast = m.predict(future)
+
+    # Plot the forecast
+    fig1 = plot_plotly(m, forecast)
+    st.plotly_chart(fig1)
+
+    # Plot the components
+    st.header("Components")
+    fig2 = plot_components_plotly(m, forecast)
+    st.plotly_chart(fig2)
