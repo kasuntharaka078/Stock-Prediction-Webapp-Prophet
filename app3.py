@@ -9,8 +9,8 @@ from prophet.plot import plot_plotly, plot_components_plotly
 st.title("Stock Price Forecasting with Prophet")
 
 # Get the symbol and period from the user
-symbol = st.text_input("Enter stock symbol (e.g., BTC-USD):", 'BTC-USD')
-period = st.text_input("Enter stock period (e.g., 10y):", '10y')
+symbol = st.text_input("Enter stock symbol (e.g., BTC-USD):", "BTC-USD")
+period = st.text_input("Enter stock period (e.g., 10y):", "10y")
 
 # Get the data from yfinance
 if symbol:
@@ -18,24 +18,25 @@ if symbol:
     df = ticker.history(period=period)
 
     if df.empty:
-        st.error(f"No historical data found for '{symbol}'. Please enter a valid ticker symbol.")
+        st.error(f"No historical data found for '{symbol}'. Please enter a valid ticker symbol or a different period.")
         st.stop()
 
     df = df.reset_index()
 
-    if 'Date' not in df.columns or 'Close' not in df.columns:
-        st.error(f"The ticker '{symbol}' did not return the expected data schema.")
+    if "Date" not in df.columns or "Close" not in df.columns:
+        st.error(f"The ticker '{symbol}' did not return the expected data format.")
         st.stop()
 
-    df = df[['Date', 'Close']].dropna().copy()
+    df = df[["Date", "Close"]].dropna().copy()
 
     if df.empty:
         st.error(f"No valid price data is available for '{symbol}'.")
         st.stop()
 
-    df['Date'] = pd.to_datetime(df['Date'])
-    df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
-    df = df.rename(columns={'Date': 'ds', 'Close': 'y'})
+    # Convert to Prophet format
+    df["ds"] = pd.to_datetime(df["Date"])
+    df["y"] = df["Close"]
+    df = df[["ds", "y"]]
 
     # Display the data
     st.header("Data")
