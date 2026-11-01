@@ -13,49 +13,57 @@ symbol = st.text_input("Enter stock symbol (e.g., BTC-USD):", "BTC-USD")
 period = st.text_input("Enter stock period (e.g., 10y):", "10y")
 
 # Get the data from yfinance
-if symbol:
-    ticker = yf.Ticker(symbol)
-    df = ticker.history(period=period)
+ticker = yf.Ticker(symbol)
+df = ticker.history(period=period)
 
-    if df.empty:
-        st.error(f"No historical data found for '{symbol}'. Please enter a valid ticker symbol or a different period.")
-        st.stop()
+if df.empty:
+    st.error(f"No historical data found for '{symbol}'. Please try a valid ticker and different period.")
+    st.stop()
 
-    df = df.reset_index()
+df = df.reset_index()
 
-    if "Date" not in df.columns or "Close" not in df.columns:
-        st.error(f"The ticker '{symbol}' did not return the expected data format.")
-        st.stop()
+# Validate the expected columns
+required = {"Date", "Close"}
+if not required.issubset(df.columns):
+    st.error(f"Ticker '{symbol}' did not return the expected data shape for forecasting.")
+    st.stop()
 
-    df = df[["Date", "Close"]].dropna().copy()
+# Keep only needed columns and clean invalid rows
+df = df[["Date", "Close"]].copy()
+df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
+df = df.dropna().sort_values("Date")
 
-    if df.empty:
-        st.error(f"No valid price data is available for '{symbol}'.")
-        st.stop()
+if df.empty:
+    st.error(f"No valid daily price data is available for '{symbol}'.")
+    st.stop()
 
-    # Convert to Prophet format
-    df["ds"] = pd.to_datetime(df["Date"])
-    df["y"] = df["Close"]
-    df = df[["ds", "y"]]
+if len(df) < 2:
+    st.error(f"Not enough valid data points for '{symbol}' to train Prophet.")
+    st.stop()
 
-    # Display the data
-    st.header("Data")
-    st.write(df)
+# Rename for Prophet
+df = df.rename(columns={"Date": "ds", "Close": "y"})
+df = df[["ds", "y"]]
 
-    # Fit the prophet model
-    st.header("Forecast")
-    m = Prophet()
-    m.fit(df)
+# Display the data
+st.header("Data")
+st.write(df)
 
-    # Make future predictions
-    future = m.make_future_dataframe(periods=365)
-    forecast = m.predict(future)
+# Fit the prophet model
+st.header("Forecast")
+m = Prophet()
+m.fit(df)
 
-    # Plot the forecast
-    fig1 = plot_plotly(m, forecast)
-    st.plotly_chart(fig1)
+# Make future predictions
+future = m.make_future_dataframe(periods=365)
+forecast = m.predict(future)
 
-    # Plot the components
-    st.header("Components")
-    fig2 = plot_components_plotly(m, forecast)
-    st.plotly_chart(fig2)
+# Plot the forecast
+fig1 = plot_plotly(m, forecast)
+st.plotly_chart(fig1)
+
+# Plot the components
+st.header("Components")
+fig2 = plot_components_plotly(m, forecast)
+st.plotly_chart(fig2)
